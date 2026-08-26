@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c1016" />
+    <meta name="description" content="Design your dream drum kit in 3D." />
+    <title>Drumland — 3D kit builder</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <a class="brand" href="#" aria-label="Drumland home">
+          <span class="brand-mark" aria-hidden="true"><i></i><i></i></span>
+          <span><strong>DRUMLAND</strong><small>3D KIT BUILDER</small></span>
+        </a>
+        <label class="kit-name">
+          <span class="sr-only">Kit name</span>
+          <input id="kit-name" value="My dream kit" maxlength="48" />
+        </label>
+        <div class="top-actions">
+          <button id="undo" class="icon-button" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>
+          <button id="redo" class="icon-button" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">↷</button>
+          <span class="divider"></span>
+          <button id="import-kit" class="text-button">Import</button>
+          <button id="export-kit" class="text-button">Export</button>
+          <button id="save-kit" class="primary-button"><span class="save-dot"></span> Save kit</button>
+          <input id="import-file" type="file" accept="application/json,.json" hidden />
+        </div>
+      </header>
+
+      <main class="workspace">
+        <aside class="catalog-panel">
+          <div class="panel-heading">
+            <div><p class="eyebrow">BUILD YOUR SETUP</p><h1>Parts catalogue</h1></div>
+            <span id="catalog-count" class="count-pill"></span>
+          </div>
+          <div id="category-tabs" class="category-tabs" role="tablist"></div>
+          <div id="catalog" class="catalog-list"></div>
+          <div class="catalog-footer">
+            <p><strong>Quick start</strong><br />Load a balanced starting point, then make it yours.</p>
+            <select id="preset-select" aria-label="Choose a kit preset">
+              <option value="studio">Studio five-piece</option>
+              <option value="arena">Arena double-bass</option>
+              <option value="minimal">Minimal jazz</option>
+            </select>
+            <button id="load-preset" class="secondary-button">Load preset</button>
+          </div>
+        </aside>
+
+        <section class="stage-panel" aria-label="3D drum kit workspace">
+          <canvas id="stage"></canvas>
+          <div class="stage-gradient"></div>
+          <div class="view-toolbar" aria-label="Editing tools">
+            <button id="tool-move" class="tool-button active" data-tool="translate" title="Move (W)"><span>↔</span> Move</button>
+            <button id="tool-rotate" class="tool-button" data-tool="rotate" title="Rotate (E)"><span>↻</span> Rotate</button>
+            <span class="divider"></span>
+            <button id="view-home" class="tool-button icon-only" title="Perspective view" aria-label="Perspective view">◇</button>
+            <button id="view-top" class="tool-button icon-only" title="Top view" aria-label="Top view">⊙</button>
+          </div>
+          <div class="stage-help"><span>Left drag</span> orbit <span>Right drag</span> pan <span>Scroll</span> zoom</div>
+          <div id="empty-stage" class="empty-stage">
+            <div class="empty-icon"><span></span><i></i></div>
+            <h2>Your stage is waiting</h2>
+            <p>Pick a part from the catalogue to begin.</p>
+          </div>
+          <div class="stage-status">
+            <span><i class="status-light"></i> AUTO-SAVED LOCALLY</span>
+            <span id="part-total">0 PARTS</span>
+          </div>
+        </section>
+
+        <aside class="inspector-panel">
+          <div class="panel-heading inspector-heading">
+            <div><p class="eyebrow">FINE TUNING</p><h2>Inspector</h2></div>
+          </div>
+          <div id="inspector-empty" class="inspector-empty">
+            <div class="target-icon">⌖</div>
+            <h3>Nothing selected</h3>
+            <p>Select a part on the stage to adjust its position, angle and finish.</p>
+          </div>
+          <div id="inspector" class="inspector-content" hidden>
+            <div class="selected-part">
+              <span id="selected-swatch" class="selected-swatch"></span>
+              <div><p id="selected-category" class="eyebrow"></p><h3 id="selected-name"></h3></div>
+            </div>
+            <section class="control-section">
+              <div class="section-title"><h4>Position</h4><button id="centre-part" class="micro-button">Centre</button></div>
+              <div class="input-grid three">
+                <label><span>X</span><input id="position-x" type="number" step="0.1" /></label>
+                <label><span>Y</span><input id="position-y" type="number" step="0.1" min="0" /></label>
+                <label><span>Z</span><input id="position-z" type="number" step="0.1" /></label>
+              </div>
+            </section>
+            <section class="control-section">
+              <div class="section-title"><h4>Orientation</h4></div>
+              <label class="range-control"><span>Rotation</span><output id="rotation-output">0°</output><input id="rotation-y" type="range" min="-180" max="180" step="1" /></label>
+              <label class="range-control"><span>Scale</span><output id="scale-output">100%</output><input id="part-scale" type="range" min="60" max="150" step="1" /></label>
+            </section>
+            <section class="control-section">
+              <div class="section-title"><h4>Finish</h4></div>
+              <div id="finish-options" class="finish-options"></div>
+            </section>
+            <section class="control-section item-actions">
+              <button id="duplicate-part" class="secondary-button">Duplicate</button>
+              <button id="delete-part" class="danger-button">Delete</button>
+            </section>
+            <p class="shortcut-note">Tip: use <kbd>W</kbd> to move, <kbd>E</kbd> to rotate, <kbd>Del</kbd> to remove.</p>
+          </div>
+        </aside>
+      </main>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
