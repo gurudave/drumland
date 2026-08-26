@@ -125,6 +125,7 @@ button:disabled { opacity: .3; cursor: not-allowed; }
 .input-grid label { position: relative; }
 .input-grid label span { position: absolute; left: 8px; top: 9px; color: #677281; font: 700 9px 'DM Sans'; }
 .input-grid input { width: 100%; min-width: 0; height: 31px; padding: 0 5px 0 20px; background: #151b23; color: #c8ced5; border: 1px solid #2a333e; border-radius: 4px; font-size: 10px; }
+.orientation-grid { margin-bottom: 17px; }
 .range-control { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px; color: #778290; font-size: 9px; margin-bottom: 12px; }
 .range-control:last-child { margin-bottom: 0; }
 .range-control output { color: #bbc2cb; font-size: 9px; }

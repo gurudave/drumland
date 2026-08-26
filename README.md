@@ -28,8 +28,11 @@ Then open the local address printed by Vite.
 
 ```bash
 npm test
+npm run test:coverage
 npm run build
 ```
+
+Coverage is enforced in CI at a minimum of 80% for statements, branches, functions and lines. The WebGL renderer adapter is excluded from instrumentation; editor behaviour, kit state and procedural 3D model generation are covered.
 
 ## Controls
 

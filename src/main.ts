@@ -181,9 +181,9 @@ function renderInspector(item = selectedItem()): void {
   element<HTMLInputElement>('position-x').value = item.position[0].toFixed(2);
   element<HTMLInputElement>('position-y').value = item.position[1].toFixed(2);
   element<HTMLInputElement>('position-z').value = item.position[2].toFixed(2);
-  const degrees = Math.round(THREE_RAD_TO_DEG * item.rotation[1]);
-  element<HTMLInputElement>('rotation-y').value = String(degrees);
-  element<HTMLOutputElement>('rotation-output').value = `${degrees}°`;
+  element<HTMLInputElement>('rotation-x').value = String(Math.round(THREE_RAD_TO_DEG * item.rotation[0]));
+  element<HTMLInputElement>('rotation-y').value = String(Math.round(THREE_RAD_TO_DEG * item.rotation[1]));
+  element<HTMLInputElement>('rotation-z').value = String(Math.round(THREE_RAD_TO_DEG * item.rotation[2]));
   element<HTMLInputElement>('part-scale').value = String(Math.round(item.scale * 100));
   element<HTMLOutputElement>('scale-output').value = `${Math.round(item.scale * 100)}%`;
 
@@ -251,17 +251,22 @@ bindNumberInput('position-x', 0);
 bindNumberInput('position-y', 1);
 bindNumberInput('position-z', 2);
 
-element<HTMLInputElement>('rotation-y').addEventListener('change', (event) => {
-  const item = selectedItem();
-  const value = Number((event.target as HTMLInputElement).value);
-  if (item) commit((draft) => {
-    const target = draft.items.find((candidate) => candidate.id === item.id);
-    if (target) target.rotation[1] = value * THREE_DEG_TO_RAD;
+function bindRotationInput(id: string, axis: 0 | 1 | 2): void {
+  element<HTMLInputElement>(id).addEventListener('change', (event) => {
+    const item = selectedItem();
+    const rawValue = Number((event.target as HTMLInputElement).value);
+    if (!item || !Number.isFinite(rawValue)) return renderInspector();
+    const degrees = Math.max(-180, Math.min(180, rawValue));
+    commit((draft) => {
+      const target = draft.items.find((candidate) => candidate.id === item.id);
+      if (target) target.rotation[axis] = degrees * THREE_DEG_TO_RAD;
+    });
   });
-});
-element<HTMLInputElement>('rotation-y').addEventListener('input', (event) => {
-  element<HTMLOutputElement>('rotation-output').value = `${(event.target as HTMLInputElement).value}°`;
-});
+}
+
+bindRotationInput('rotation-x', 0);
+bindRotationInput('rotation-y', 1);
+bindRotationInput('rotation-z', 2);
 element<HTMLInputElement>('part-scale').addEventListener('change', (event) => {
   const item = selectedItem();
   const value = Number((event.target as HTMLInputElement).value) / 100;
