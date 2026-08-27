@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { PartDefinition } from '../types';
+import { createCymbalGeometry } from './cymbalGeometry';
 import { createShellMaterial, materials } from './materials';
 
 const { chrome, darkChrome, rubber, felt, clearDrumHead, markedDrumHead, cymbalBronze } = materials;
@@ -103,19 +104,10 @@ function cymbal(definition: PartDefinition): THREE.Group {
   const { radius, height } = definition.dimensions;
   addTripod(group, height * 0.74, Math.min(0.45, radius * 0.8));
   group.add(pole(0.018, height * 0.52, [0, height * 0.74 + height * 0.26, 0]));
-  const isChina = definition.kind === 'china';
-  const cymbalMesh = mesh(new THREE.CylinderGeometry(radius * 0.94, radius, isChina ? 0.075 : 0.035, 64, 1), cymbalBronze, [0, height, 0]);
+  const cymbalMesh = mesh(createCymbalGeometry(definition.kind as 'crash' | 'ride' | 'china' | 'splash', radius), cymbalBronze, [0, height, 0]);
   cymbalMesh.rotation.x = definition.kind === 'ride' ? -0.1 : 0.08;
   cymbalMesh.rotation.z = definition.kind === 'crash' ? 0.1 : 0;
   group.add(cymbalMesh);
-  const bell = mesh(new THREE.SphereGeometry(radius * 0.15, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2), cymbalBronze, [0, height + 0.008, 0]);
-  bell.scale.y = 0.42;
-  group.add(bell);
-  if (isChina) {
-    const edge = mesh(new THREE.TorusGeometry(radius * 0.91, 0.035, 8, 64), cymbalBronze, [0, height + 0.035, 0]);
-    edge.rotation.x = Math.PI / 2;
-    group.add(edge);
-  }
   group.add(mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.025, 16), felt, [0, height - 0.018, 0]));
   return group;
 }
@@ -126,7 +118,9 @@ function hiHat(definition: PartDefinition): THREE.Group {
   addTripod(group, height * 0.7, 0.32);
   group.add(pole(0.017, height * 0.65, [0, height * 0.68, 0]));
   for (const offset of [0, 0.045]) {
-    group.add(mesh(new THREE.CylinderGeometry(radius * 0.93, radius, 0.025, 48), cymbalBronze, [0, height + offset, 0]));
+    const hat = mesh(createCymbalGeometry('hi-hat', radius), cymbalBronze, [0, height + offset, 0]);
+    if (offset === 0) hat.rotation.z = Math.PI;
+    group.add(hat);
   }
   group.add(mesh(new THREE.BoxGeometry(0.13, 0.025, 0.34), darkChrome, [0, 0.025, 0.17]));
   return group;
