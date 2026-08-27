@@ -1,11 +1,8 @@
 import * as THREE from 'three';
 import type { PartDefinition } from '../types';
+import { createShellMaterial, materials } from './materials';
 
-const chrome = new THREE.MeshStandardMaterial({ color: 0xb8bec5, metalness: 0.92, roughness: 0.2 });
-const darkChrome = new THREE.MeshStandardMaterial({ color: 0x3b4149, metalness: 0.85, roughness: 0.28 });
-const rubber = new THREE.MeshStandardMaterial({ color: 0x111419, metalness: 0.05, roughness: 0.82 });
-const head = new THREE.MeshPhysicalMaterial({ color: 0xe8e4d9, roughness: 0.55, transmission: 0.08, transparent: true, opacity: 0.92 });
-const brass = new THREE.MeshStandardMaterial({ color: 0xcaa44f, metalness: 0.86, roughness: 0.28 });
+const { chrome, darkChrome, rubber, felt, clearDrumHead, markedDrumHead, cymbalBronze } = materials;
 
 function mesh(geometry: THREE.BufferGeometry, material: THREE.Material, position: [number, number, number] = [0, 0, 0]): THREE.Mesh {
   const object = new THREE.Mesh(geometry, material);
@@ -15,7 +12,7 @@ function mesh(geometry: THREE.BufferGeometry, material: THREE.Material, position
   return object;
 }
 
-function pole(radius: number, length: number, position: [number, number, number], material = chrome): THREE.Mesh {
+function pole(radius: number, length: number, position: [number, number, number], material: THREE.Material = chrome): THREE.Mesh {
   return mesh(new THREE.CylinderGeometry(radius, radius, length, 12), material, position);
 }
 
@@ -45,9 +42,9 @@ function verticalDrum(definition: PartDefinition, finish: string, stand: 'rack' 
   const group = new THREE.Group();
   const { radius, depth, height } = definition.dimensions;
   const centre = height;
-  const shellMaterial = new THREE.MeshPhysicalMaterial({ color: finish, metalness: 0.28, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.15 });
+  const shellMaterial = createShellMaterial(finish);
   group.add(mesh(new THREE.CylinderGeometry(radius, radius, depth, 48), shellMaterial, [0, centre, 0]));
-  group.add(mesh(new THREE.CylinderGeometry(radius * 0.98, radius * 0.98, 0.025, 48), head, [0, centre + depth / 2 + 0.014, 0]));
+  group.add(mesh(new THREE.CylinderGeometry(radius * 0.98, radius * 0.98, 0.025, 48), markedDrumHead, [0, centre + depth / 2 + 0.014, 0]));
   const upperHoop = mesh(new THREE.TorusGeometry(radius, 0.023, 10, 48), chrome, [0, centre + depth / 2, 0]);
   const lowerHoop = mesh(new THREE.TorusGeometry(radius, 0.023, 10, 48), chrome, [0, centre - depth / 2, 0]);
   upperHoop.rotation.x = lowerHoop.rotation.x = Math.PI / 2;
@@ -77,12 +74,13 @@ function bassDrum(definition: PartDefinition, finish: string): THREE.Group {
   const group = new THREE.Group();
   const { radius, depth } = definition.dimensions;
   const y = radius + 0.06;
-  const shellMaterial = new THREE.MeshPhysicalMaterial({ color: finish, metalness: 0.25, roughness: 0.3, clearcoat: 0.9, clearcoatRoughness: 0.12 });
+  const shellMaterial = createShellMaterial(finish);
   const shell = mesh(new THREE.CylinderGeometry(radius, radius, depth, 64), shellMaterial, [0, y, 0]);
   shell.rotation.x = Math.PI / 2;
   group.add(shell);
   for (const z of [-depth / 2 - 0.012, depth / 2 + 0.012]) {
-    const drumHead = mesh(new THREE.CylinderGeometry(radius * 0.985, radius * 0.985, 0.025, 64), head, [0, y, z]);
+    const headMaterial = z < 0 ? markedDrumHead : clearDrumHead;
+    const drumHead = mesh(new THREE.CylinderGeometry(radius * 0.985, radius * 0.985, 0.025, 64), headMaterial, [0, y, z]);
     drumHead.rotation.x = Math.PI / 2;
     group.add(drumHead);
     group.add(mesh(new THREE.TorusGeometry(radius, 0.032, 12, 64), darkChrome, [0, y, z]));
@@ -106,18 +104,19 @@ function cymbal(definition: PartDefinition): THREE.Group {
   addTripod(group, height * 0.74, Math.min(0.45, radius * 0.8));
   group.add(pole(0.018, height * 0.52, [0, height * 0.74 + height * 0.26, 0]));
   const isChina = definition.kind === 'china';
-  const cymbalMesh = mesh(new THREE.CylinderGeometry(radius * 0.94, radius, isChina ? 0.075 : 0.035, 64, 1), brass, [0, height, 0]);
+  const cymbalMesh = mesh(new THREE.CylinderGeometry(radius * 0.94, radius, isChina ? 0.075 : 0.035, 64, 1), cymbalBronze, [0, height, 0]);
   cymbalMesh.rotation.x = definition.kind === 'ride' ? -0.1 : 0.08;
   cymbalMesh.rotation.z = definition.kind === 'crash' ? 0.1 : 0;
   group.add(cymbalMesh);
-  const bell = mesh(new THREE.SphereGeometry(radius * 0.15, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2), brass, [0, height + 0.008, 0]);
+  const bell = mesh(new THREE.SphereGeometry(radius * 0.15, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2), cymbalBronze, [0, height + 0.008, 0]);
   bell.scale.y = 0.42;
   group.add(bell);
   if (isChina) {
-    const edge = mesh(new THREE.TorusGeometry(radius * 0.91, 0.035, 8, 64), brass, [0, height + 0.035, 0]);
+    const edge = mesh(new THREE.TorusGeometry(radius * 0.91, 0.035, 8, 64), cymbalBronze, [0, height + 0.035, 0]);
     edge.rotation.x = Math.PI / 2;
     group.add(edge);
   }
+  group.add(mesh(new THREE.CylinderGeometry(0.045, 0.055, 0.025, 16), felt, [0, height - 0.018, 0]));
   return group;
 }
 
@@ -127,7 +126,7 @@ function hiHat(definition: PartDefinition): THREE.Group {
   addTripod(group, height * 0.7, 0.32);
   group.add(pole(0.017, height * 0.65, [0, height * 0.68, 0]));
   for (const offset of [0, 0.045]) {
-    group.add(mesh(new THREE.CylinderGeometry(radius * 0.93, radius, 0.025, 48), brass, [0, height + offset, 0]));
+    group.add(mesh(new THREE.CylinderGeometry(radius * 0.93, radius, 0.025, 48), cymbalBronze, [0, height + offset, 0]));
   }
   group.add(mesh(new THREE.BoxGeometry(0.13, 0.025, 0.34), darkChrome, [0, 0.025, 0.17]));
   return group;

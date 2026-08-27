@@ -40,4 +40,27 @@ describe('procedural part models', () => {
     expect(coloursIn(buildPart(tom!, '#315e4b'))).toContain('#315e4b');
     expect(tom?.accent).toBe('#c8782d');
   });
+
+  it('applies every catalogue finish to every drum shell', () => {
+    const finishes = ['#c8782d', '#8f2f3a', '#202b3b', '#235b70', '#315e4b', '#ddd4c2'];
+    const drums = PARTS.filter((part) => part.category === 'Drums');
+    for (const drum of drums) {
+      for (const finish of finishes) {
+        expect(coloursIn(buildPart(drum, finish)), `${drum.id} ${finish}`).toContain(finish);
+      }
+    }
+  });
+
+  it('reuses the central cymbal material between models', () => {
+    const crash = buildPart(PART_BY_ID.get('crash-16')!, '#c8782d');
+    const ride = buildPart(PART_BY_ID.get('ride-20')!, '#c8782d');
+    const materialFrom = (group: THREE.Group): THREE.Material | undefined => {
+      let found: THREE.Material | undefined;
+      group.traverse((child) => {
+        if (child instanceof THREE.Mesh && !Array.isArray(child.material) && child.material.name === 'cymbal-bronze') found = child.material;
+      });
+      return found;
+    };
+    expect(materialFrom(crash)).toBe(materialFrom(ride));
+  });
 });
