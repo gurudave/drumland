@@ -1,9 +1,18 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { PART_BY_ID } from '../catalog';
 import type { KitItem } from '../types';
 import { buildPart } from './parts';
+import {
+  STUDIO_CAMERA,
+  contactShadowFootprint,
+  createContactShadowTexture,
+  createStudioLights,
+  selectStudioQuality,
+  type StudioQuality,
+} from './studioEnvironment';
 
 type TransformMode = 'translate' | 'rotate';
 
@@ -15,14 +24,19 @@ interface StudioCallbacks {
 
 export class Studio {
   private readonly scene = new THREE.Scene();
-  private readonly camera = new THREE.PerspectiveCamera(42, 1, 0.05, 100);
+  private readonly camera: THREE.PerspectiveCamera;
   private readonly renderer: THREE.WebGLRenderer;
+  private readonly quality: StudioQuality;
   private readonly orbit: OrbitControls;
   private readonly transform: TransformControls;
   private readonly raycaster = new THREE.Raycaster();
   private readonly pointer = new THREE.Vector2();
   private readonly objects = new Map<string, THREE.Group>();
+  private readonly contactShadows = new Map<string, THREE.Mesh>();
   private readonly signatures = new Map<string, string>();
+  private readonly contactShadowTexture: THREE.DataTexture;
+  private readonly contactShadowGeometry = new THREE.PlaneGeometry(1, 1);
+  private environmentTarget: THREE.WebGLRenderTarget | null = null;
   private readonly callbacks: StudioCallbacks;
   private selection: THREE.Group | null = null;
   private outline: THREE.BoxHelper | null = null;
@@ -31,19 +45,35 @@ export class Studio {
 
   constructor(canvas: HTMLCanvasElement, callbacks: StudioCallbacks) {
     this.callbacks = callbacks;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const navigatorWithMemory = navigator as Navigator & { deviceMemory?: number };
+    this.quality = selectStudioQuality({
+      devicePixelRatio: window.devicePixelRatio,
+      viewportWidth: window.innerWidth,
+      hardwareConcurrency: navigator.hardwareConcurrency || 8,
+      deviceMemory: navigatorWithMemory.deviceMemory ?? 8,
+      coarsePointer: window.matchMedia?.('(pointer: coarse)').matches ?? false,
+    });
+    this.camera = new THREE.PerspectiveCamera(STUDIO_CAMERA.fov, 1, 0.05, 100);
+    this.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: this.quality.antialias,
+      alpha: false,
+      powerPreference: this.quality.name === 'high' ? 'high-performance' : 'default',
+    });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, this.quality.pixelRatioCap));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    this.renderer.toneMappingExposure = 1.12;
+    this.renderer.toneMappingExposure = 1;
     this.scene.background = new THREE.Color(0x111720);
     this.scene.fog = new THREE.FogExp2(0x111720, 0.035);
+    this.scene.environmentIntensity = 0.9;
+    this.contactShadowTexture = createContactShadowTexture();
 
-    this.camera.position.set(4.8, 3.25, 5.6);
+    this.camera.position.set(...STUDIO_CAMERA.home.position);
     this.orbit = new OrbitControls(this.camera, canvas);
-    this.orbit.target.set(0, 0.7, 0.2);
+    this.orbit.target.set(...STUDIO_CAMERA.home.target);
     this.orbit.enableDamping = true;
     this.orbit.dampingFactor = 0.07;
     this.orbit.minDistance = 2.2;
@@ -68,20 +98,17 @@ export class Studio {
   }
 
   private addEnvironment(): void {
-    this.scene.add(new THREE.HemisphereLight(0xd8e8ff, 0x1b1612, 2.25));
-    const key = new THREE.DirectionalLight(0xffead2, 4.2);
-    key.position.set(-3, 6, 4);
-    key.castShadow = true;
-    key.shadow.mapSize.set(2048, 2048);
-    key.shadow.camera.left = key.shadow.camera.bottom = -5;
-    key.shadow.camera.right = key.shadow.camera.top = 5;
-    this.scene.add(key);
-    const rim = new THREE.DirectionalLight(0x69a8d8, 2.4);
-    rim.position.set(4, 3, -4);
-    this.scene.add(rim);
+    const room = new RoomEnvironment();
+    const pmrem = new THREE.PMREMGenerator(this.renderer);
+    this.environmentTarget = pmrem.fromScene(room, 0.035, 0.1, 100, { size: this.quality.environmentMapSize });
+    this.scene.environment = this.environmentTarget.texture;
+    room.dispose();
+    pmrem.dispose();
 
-    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x191f28, roughness: 0.9, metalness: 0.05 });
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(5.2, 96), floorMaterial);
+    this.scene.add(createStudioLights(this.quality));
+
+    const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x1a2028, roughness: 0.78, metalness: 0.03, envMapIntensity: 0.55 });
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(5.2, this.quality.name === 'high' ? 96 : 64), floorMaterial);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     this.scene.add(floor);
@@ -109,6 +136,12 @@ export class Studio {
         this.disposeObject(object);
         this.objects.delete(id);
         this.signatures.delete(id);
+        const contactShadow = this.contactShadows.get(id);
+        if (contactShadow) {
+          this.scene.remove(contactShadow);
+          (contactShadow.material as THREE.Material).dispose();
+          this.contactShadows.delete(id);
+        }
       }
     }
 
@@ -132,8 +165,45 @@ export class Studio {
       object.position.set(...item.position);
       object.rotation.set(...item.rotation);
       object.scale.setScalar(item.scale);
+
+      this.updateContactShadow(item.id, definition, item.position, item.scale);
     }
     this.setSelection(selectedId);
+  }
+
+  private createContactShadow(): THREE.Mesh {
+    const material = new THREE.MeshBasicMaterial({
+      map: this.contactShadowTexture,
+      transparent: true,
+      opacity: this.quality.contactShadowOpacity,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    const shadow = new THREE.Mesh(this.contactShadowGeometry, material);
+    shadow.name = 'part-contact-shadow';
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.renderOrder = 1;
+    return shadow;
+  }
+
+  private updateContactShadow(
+    id: string,
+    definition: NonNullable<ReturnType<typeof PART_BY_ID.get>>,
+    position: readonly [number, number, number],
+    scale: number,
+  ): void {
+    let contactShadow = this.contactShadows.get(id);
+    if (!contactShadow) {
+      contactShadow = this.createContactShadow();
+      this.contactShadows.set(id, contactShadow);
+      this.scene.add(contactShadow);
+    }
+    const [shadowWidth, shadowDepth] = contactShadowFootprint(definition);
+    const material = contactShadow.material as THREE.MeshBasicMaterial;
+    material.opacity = this.quality.contactShadowOpacity * THREE.MathUtils.clamp(1 - position[1] / 0.5, 0, 1);
+    contactShadow.visible = material.opacity > 0.01;
+    contactShadow.position.set(position[0], 0.009, position[2]);
+    contactShadow.scale.set(shadowWidth * scale, shadowDepth * scale, 1);
   }
 
   setMode(mode: TransformMode): void {
@@ -162,14 +232,14 @@ export class Studio {
   }
 
   homeView(): void {
-    this.camera.position.set(4.8, 3.25, 5.6);
-    this.orbit.target.set(0, 0.7, 0.2);
+    this.camera.position.set(...STUDIO_CAMERA.home.position);
+    this.orbit.target.set(...STUDIO_CAMERA.home.target);
     this.orbit.update();
   }
 
   topView(): void {
-    this.camera.position.set(0.001, 8, 0.001);
-    this.orbit.target.set(0, 0, 0);
+    this.camera.position.set(...STUDIO_CAMERA.top.position);
+    this.orbit.target.set(...STUDIO_CAMERA.top.target);
     this.orbit.update();
   }
 
@@ -199,6 +269,15 @@ export class Studio {
     if (!this.selection) return;
     this.outline?.update();
     const current = this.selection;
+    const definition = PART_BY_ID.get(current.userData.partId as string);
+    if (definition) {
+      this.updateContactShadow(
+        current.userData.itemId as string,
+        definition,
+        [current.position.x, current.position.y, current.position.z],
+        current.scale.x,
+      );
+    }
     this.callbacks.onTransform({
       id: current.userData.itemId as string,
       partId: current.userData.partId as string,
@@ -235,6 +314,10 @@ export class Studio {
   dispose(): void {
     cancelAnimationFrame(this.animationFrame);
     this.resizeObserver.disconnect();
+    for (const shadow of this.contactShadows.values()) (shadow.material as THREE.Material).dispose();
+    this.contactShadowGeometry.dispose();
+    this.contactShadowTexture.dispose();
+    this.environmentTarget?.dispose();
     this.renderer.dispose();
   }
 }
