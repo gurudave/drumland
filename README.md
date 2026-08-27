@@ -52,7 +52,7 @@ The Pages workflow builds and tests every push to `main`, then publishes `dist`.
 
 - TypeScript and Vite
 - Three.js with orbit and transform controls
-- Procedural part geometry; no model or texture downloads
+- Procedural part geometry and studio reflections; no model, texture or HDR downloads
 - Versioned JSON document format and local browser persistence
 
 ## Likely next milestones
