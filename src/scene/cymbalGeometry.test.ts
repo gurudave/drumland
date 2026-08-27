@@ -19,6 +19,14 @@ function profileHeight(kind: CymbalKind): number {
   return Math.max(...heights) - Math.min(...heights);
 }
 
+const minimumBowHeight: Readonly<Record<CymbalKind, number>> = {
+  'hi-hat': 0.04,
+  crash: 0.08,
+  ride: 0.06,
+  splash: 0.1,
+  china: 0.04,
+};
+
 describe('lathed cymbal geometry', () => {
   it('defines recognisably different profiles for every cymbal type', () => {
     expect(CYMBAL_PROFILES.ride.bellRadius).toBeGreaterThan(CYMBAL_PROFILES.crash.bellRadius);
@@ -26,6 +34,10 @@ describe('lathed cymbal geometry', () => {
     expect(CYMBAL_PROFILES.splash.bellHeight).toBeGreaterThan(CYMBAL_PROFILES.ride.bellHeight);
     expect(CYMBAL_PROFILES.china.edgeLift).toBeGreaterThan(0.08);
     expect(profileHeight('china')).toBeGreaterThan(profileHeight('hi-hat'));
+  });
+
+  it.each(kinds)('gives the %s a visibly formed bow rather than a flat plate', (kind) => {
+    expect(CYMBAL_PROFILES[kind].bowHeight).toBeGreaterThanOrEqual(minimumBowHeight[kind]);
   });
 
   it.each(kinds)('creates a closed continuous %s cross-section', (kind) => {

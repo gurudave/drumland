@@ -20,6 +20,11 @@ function byte(value: number): number {
   return Math.max(0, Math.min(255, Math.round(value)));
 }
 
+function smoothstep(value: number): number {
+  const clamped = Math.max(0, Math.min(1, value));
+  return clamped * clamped * (3 - 2 * clamped);
+}
+
 type PixelGenerator = (x: number, y: number, size: number) => [number, number, number, number];
 
 function dataTexture(name: string, size: number, pixel: PixelGenerator, colour = false): THREE.DataTexture {
@@ -87,13 +92,33 @@ const pearlRoughness = dataTexture('pearl-roughness', 128, (x, y) => {
 });
 pearlRoughness.repeat.set(2, 1);
 
+function hammerDimple(x: number, y: number): number {
+  const spacing = 11;
+  const gridX = Math.floor(x / spacing);
+  const gridY = Math.floor(y / spacing);
+  let influence = 0;
+
+  for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+    for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+      const cellX = gridX + offsetX;
+      const cellY = gridY + offsetY;
+      if (noise(cellX, cellY, 31) <= 0.74) continue;
+      const centreX = (cellX + 0.5 + (noise(cellX, cellY, 33) - 0.5) * 0.42) * spacing;
+      const centreY = (cellY + 0.5 + (noise(cellX, cellY, 34) - 0.5) * 0.42) * spacing;
+      const distance = Math.hypot(x - centreX, y - centreY);
+      const blend = 1 - smoothstep(distance / (spacing * 0.42));
+      influence = Math.max(influence, blend * blend);
+    }
+  }
+  return influence;
+}
+
 function radialHeight(x: number, y: number, size: number): number {
   const dx = x - size / 2;
   const dy = y - size / 2;
   const radius = Math.sqrt(dx * dx + dy * dy);
-  const lathe = Math.sin(radius * 2.4) * 0.12;
-  const hammered = noise(Math.floor(x / 5), Math.floor(y / 5), 31) > 0.78 ? 0.42 : 0;
-  return lathe + hammered;
+  const lathe = Math.sin(radius * 2.4) * 0.035;
+  return lathe - hammerDimple(x, y) * 0.055;
 }
 
 const cymbalRoughness = dataTexture('bronze-lathe-roughness', 256, (x, y, size) => {
@@ -101,13 +126,13 @@ const cymbalRoughness = dataTexture('bronze-lathe-roughness', 256, (x, y, size) 
   const dy = y - size / 2;
   const radius = Math.sqrt(dx * dx + dy * dy);
   const rings = (Math.sin(radius * 2.4) + 1) * 20;
-  const hammer = noise(Math.floor(x / 5), Math.floor(y / 5), 31) > 0.78 ? -32 : 0;
-  const value = 112 + rings + hammer + (noise(x, y, 32) - 0.5) * 14;
+  const hammer = hammerDimple(x, y) * -14;
+  const value = 112 + rings + hammer + (noise(x, y, 32) - 0.5) * 10;
   return [value, value, value, 255];
 });
 cymbalRoughness.wrapS = cymbalRoughness.wrapT = THREE.ClampToEdgeWrapping;
 
-const cymbalNormal = normalTexture('bronze-hammer-normal', 256, radialHeight, 2.2);
+const cymbalNormal = normalTexture('bronze-hammer-normal', 256, radialHeight, 0.9);
 cymbalNormal.wrapS = cymbalNormal.wrapT = THREE.ClampToEdgeWrapping;
 
 function headColour(marked: boolean): THREE.DataTexture {
@@ -209,7 +234,7 @@ export const materials = {
     roughness: 0.31,
     roughnessMap: cymbalRoughness,
     normalMap: cymbalNormal,
-    normalScale: new THREE.Vector2(0.22, 0.22),
+    normalScale: new THREE.Vector2(0.1, 0.1),
     envMapIntensity: 1.28,
   }),
 };

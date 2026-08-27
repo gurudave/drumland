@@ -16,11 +16,11 @@ export interface CymbalProfileSpec {
 }
 
 export const CYMBAL_PROFILES: Readonly<Record<CymbalKind, CymbalProfileSpec>> = {
-  'hi-hat': { bellRadius: 0.18, bellHeight: 0.075, bowHeight: 0.028, bowPower: 1.1, edgeLift: -0.006, edgeLiftStart: 0.82, thickness: 0.011, deformation: 0.0018, lobes: 5 },
-  crash: { bellRadius: 0.19, bellHeight: 0.105, bowHeight: 0.055, bowPower: 0.76, edgeLift: -0.012, edgeLiftStart: 0.78, thickness: 0.009, deformation: 0.0038, lobes: 5 },
-  ride: { bellRadius: 0.235, bellHeight: 0.12, bowHeight: 0.038, bowPower: 1.42, edgeLift: -0.004, edgeLiftStart: 0.84, thickness: 0.014, deformation: 0.0015, lobes: 7 },
-  splash: { bellRadius: 0.205, bellHeight: 0.135, bowHeight: 0.072, bowPower: 0.64, edgeLift: -0.018, edgeLiftStart: 0.7, thickness: 0.008, deformation: 0.0045, lobes: 3 },
-  china: { bellRadius: 0.175, bellHeight: 0.095, bowHeight: 0.025, bowPower: 1.18, edgeLift: 0.095, edgeLiftStart: 0.72, thickness: 0.01, deformation: 0.0052, lobes: 5 },
+  'hi-hat': { bellRadius: 0.18, bellHeight: 0.058, bowHeight: 0.045, bowPower: 0.85, edgeLift: -0.008, edgeLiftStart: 0.82, thickness: 0.011, deformation: 0.0018, lobes: 5 },
+  crash: { bellRadius: 0.19, bellHeight: 0.07, bowHeight: 0.09, bowPower: 0.68, edgeLift: -0.016, edgeLiftStart: 0.78, thickness: 0.009, deformation: 0.0032, lobes: 5 },
+  ride: { bellRadius: 0.235, bellHeight: 0.093, bowHeight: 0.065, bowPower: 0.95, edgeLift: -0.006, edgeLiftStart: 0.84, thickness: 0.014, deformation: 0.0015, lobes: 7 },
+  splash: { bellRadius: 0.205, bellHeight: 0.097, bowHeight: 0.11, bowPower: 0.55, edgeLift: -0.024, edgeLiftStart: 0.7, thickness: 0.008, deformation: 0.0035, lobes: 3 },
+  china: { bellRadius: 0.175, bellHeight: 0.075, bowHeight: 0.045, bowPower: 0.95, edgeLift: 0.135, edgeLiftStart: 0.72, thickness: 0.01, deformation: 0.004, lobes: 5 },
 };
 
 const PROFILE_SEGMENTS = 28;
