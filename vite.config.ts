@@ -6,7 +6,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'html'],
-      include: ['src/kit.ts', 'src/main.ts', 'src/scene/cymbalGeometry.ts', 'src/scene/materials.ts', 'src/scene/parts.ts'],
+      include: ['src/kit.ts', 'src/main.ts', 'src/scene/cymbalGeometry.ts', 'src/scene/materials.ts', 'src/scene/parts.ts', 'src/scene/studioEnvironment.ts'],
       exclude: ['src/scene/Studio.ts'],
       thresholds: {
         statements: 80,
