@@ -176,7 +176,7 @@ export function buildPart(definition: PartDefinition, finish: string): THREE.Gro
   let group: THREE.Group;
   switch (definition.kind) {
     case 'bass-drum': group = bassDrum(definition, finish); break;
-    case 'snare': group = verticalDrum(definition, '#a9afb6', 'snare'); break;
+    case 'snare': group = verticalDrum(definition, finish, 'snare'); break;
     case 'rack-tom': group = verticalDrum(definition, finish, 'rack'); break;
     case 'floor-tom': group = verticalDrum(definition, finish, 'floor'); break;
     case 'hi-hat': group = hiHat(definition); break;

@@ -94,7 +94,11 @@
             </section>
             <section class="control-section">
               <div class="section-title"><h4>Orientation</h4></div>
-              <label class="range-control"><span>Rotation</span><output id="rotation-output">0°</output><input id="rotation-y" type="range" min="-180" max="180" step="1" /></label>
+              <div class="input-grid three orientation-grid">
+                <label title="Tilt forwards or backwards"><span>X°</span><input id="rotation-x" aria-label="X tilt in degrees" type="number" min="-180" max="180" step="1" /></label>
+                <label title="Turn left or right"><span>Y°</span><input id="rotation-y" aria-label="Y rotation in degrees" type="number" min="-180" max="180" step="1" /></label>
+                <label title="Tilt left or right"><span>Z°</span><input id="rotation-z" aria-label="Z tilt in degrees" type="number" min="-180" max="180" step="1" /></label>
+              </div>
               <label class="range-control"><span>Scale</span><output id="scale-output">100%</output><input id="part-scale" type="range" min="60" max="150" step="1" /></label>
             </section>
             <section class="control-section">
