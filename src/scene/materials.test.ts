@@ -54,6 +54,31 @@ describe('PBR material library', () => {
     expect(materials.markedDrumHead.map).not.toBe(materials.clearDrumHead.map);
   });
 
+  it('keeps cymbal hammering subtle and smoothly blended', () => {
+    const normalMap = materials.cymbalBronze.normalMap as THREE.DataTexture;
+    const image = normalMap.image as { data: Uint8Array; width: number; height: number };
+    let greatestNeighbourChange = 0;
+
+    for (let y = 1; y < image.height - 1; y += 1) {
+      for (let x = 1; x < image.width - 1; x += 1) {
+        const offset = (y * image.width + x) * 4;
+        const right = offset + 4;
+        const below = offset + image.width * 4;
+        for (const neighbour of [right, below]) {
+          const change = Math.hypot(
+            image.data[offset] - image.data[neighbour],
+            image.data[offset + 1] - image.data[neighbour + 1],
+          ) / 255;
+          greatestNeighbourChange = Math.max(greatestNeighbourChange, change);
+        }
+      }
+    }
+
+    expect(greatestNeighbourChange).toBeLessThan(0.2);
+    expect(materials.cymbalBronze.normalScale.x).toBeLessThanOrEqual(0.12);
+    expect(materials.cymbalBronze.normalScale.y).toBeLessThanOrEqual(0.12);
+  });
+
   it('uses correct colour spaces, filtering and wrapping', () => {
     const textures = materialTextures();
     expect(textures).toHaveLength(11);
