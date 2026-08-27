@@ -6,13 +6,19 @@ Drumland generates cymbals from closed two-dimensional cross-sections in `src/sc
 
 | Type | Character |
 |---|---|
-| Hi-hat | Compact bell, shallow bow and firm edge |
-| Crash | Medium bell, flexible bow and gently falling edge |
-| Ride | Large bell, flatter/heavier bow and thicker edge |
+| Hi-hat | Compact bell, moderately formed bow and firm edge |
+| Crash | Medium bell, full flexible bow and gently falling edge |
+| Ride | Large bell, broad controlled bow and thicker edge |
 | Splash | Pronounced bell, steep flexible bow and thin edge |
-| China | Compact bell, shallow bow and strongly upturned outer edge |
+| China | Compact bell, formed bow and strongly upturned outer edge |
 
 Each profile contains 60 cross-section points and uses 96 angular segments. The outer surface is rounded through the rim rather than joining separate bell, disc and torus meshes.
+
+The bow values are deliberately more pronounced than the first implementation, while the total bell peaks remain essentially unchanged. This gives a readable side silhouette without exaggerating the bell that already worked well.
+
+## Surface relief
+
+Lathing remains visible through concentric roughness variation and a restrained normal map. Hammer marks use smoothly blended, irregularly positioned dimples rather than square height steps, with a reduced normal-map strength so they break up reflections without making the bronze look pebbled.
 
 ## Controlled irregularity
 
